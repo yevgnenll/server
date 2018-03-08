@@ -726,11 +726,12 @@ describe('OCA.Sharing.FileList tests', function() {
 				etag: 'abc',
 				shareOwner: 'User One',
 				recipients: 'User Two',
-				mountType: 'external-root'
+				mountType: 'external-root',
+				sharePermissions: OC.PERMISSION_READ,
 			}]);
 			$tr = fileList.$el.find('tr:first');
 
-			expect(parseInt($tr.attr('data-share-permissions'), 10)).toEqual(OC.PERMISSION_ALL - OC.PERMISSION_SHARE);
+			expect(parseInt($tr.attr('data-share-permissions'), 10)).toEqual(OC.PERMISSION_READ);
 		});
 
 		it('external storage root folder reshare', function () {
@@ -747,33 +748,12 @@ describe('OCA.Sharing.FileList tests', function() {
 				etag: 'abc',
 				shareOwner: 'User One',
 				recipients: 'User Two',
-				mountType: 'external-root'
+				mountType: 'external-root',
+				sharePermissions: OC.PERMISSION_READ | OC.PERMISSION_SHARE,
 			}]);
 			$tr = fileList.$el.find('tr:first');
 
-			expect(parseInt($tr.attr('data-share-permissions'), 10)).toEqual(OC.PERMISSION_ALL);
-		});
-
-		it('external storage root folder file', function () {
-			var $tr;
-			OC.Share.statuses = {1: {link: false, path: '/subdir'}};
-			fileList.setFiles([{
-				id: 1,
-				type: 'file',
-				name: 'One.txt',
-				path: '/subdir',
-				mimetype: 'text/plain',
-				size: 12,
-				permissions: OC.PERMISSION_READ,
-				etag: 'abc',
-				shareOwner: 'User One',
-				recipients: 'User Two',
-				mountType: 'external-root'
-			}]);
-			$tr = fileList.$el.find('tr:first');
-
-			expect(parseInt($tr.attr('data-share-permissions'), 10))
-				.toEqual(OC.PERMISSION_ALL - OC.PERMISSION_SHARE - OC.PERMISSION_DELETE - OC.PERMISSION_CREATE);
+			expect(parseInt($tr.attr('data-share-permissions'), 10)).toEqual(OC.PERMISSION_READ | OC.PERMISSION_SHARE);
 		});
 	});
 });
