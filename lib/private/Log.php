@@ -37,6 +37,7 @@ namespace OC;
 
 use InterfaSys\LogNormalizer\Normalizer;
 
+use OC\Log\File;
 use OCP\ILogger;
 use OCP\Support\CrashReport\IRegistry;
 use OCP\Util;
@@ -251,36 +252,25 @@ class Log implements ILogger {
 	 * @return void
 	 */
 	public function log(int $level, string $message, array $context = []) {
-		$minLevel = min($this->config->getValue('loglevel', Util::WARN), Util::FATAL);
-		$logCondition = $this->config->getValue('log.condition', []);
+		$minLevel = $this->getLogLevel($context);
 
 		array_walk($context, [$this->normalizer, 'format']);
 
-		if (isset($context['app'])) {
-			$app = $context['app'];
+		$app = $context['app'] ?: 'no app in context';
 
-			/**
-			 * check log condition based on the context of each log message
-			 * once this is met -> change the required log level to debug
-			 */
-			if(!empty($logCondition)
-				&& isset($logCondition['apps'])
-				&& in_array($app, $logCondition['apps'], true)) {
-				$minLevel = Util::DEBUG;
-			}
-
-		} else {
-			$app = 'no app in context';
-		}
 		// interpolate $message as defined in PSR-3
 		$replace = [];
 		foreach ($context as $key => $val) {
 			$replace['{' . $key . '}'] = $val;
 		}
-
-		// interpolate replacement values into the message and return
 		$message = strtr($message, $replace);
 
+		if ($level >= $minLevel) {
+			call_user_func([$this->logger, 'write'], $app, $message, $level);
+		}
+	}
+
+	private function getLogLevel($context) {
 		/**
 		 * check for a special log condition - this enables an increased log on
 		 * a per request/user base
@@ -314,13 +304,25 @@ class Log implements ILogger {
 
 		// if log condition is satisfied change the required log level to DEBUG
 		if($this->logConditionSatisfied) {
-			$minLevel = Util::DEBUG;
+			return Util::DEBUG;
 		}
 
-		if ($level >= $minLevel) {
-			$logger = $this->logger;
-			call_user_func([$logger, 'write'], $app, $message, $level);
+		if (isset($context['app'])) {
+			$logCondition = $this->config->getValue('log.condition', []);
+			$app = $context['app'];
+
+			/**
+			 * check log condition based on the context of each log message
+			 * once this is met -> change the required log level to debug
+			 */
+			if (!empty($logCondition)
+				&& isset($logCondition['apps'])
+				&& in_array($app, $logCondition['apps'], true)) {
+				return Util::DEBUG;
+			}
 		}
+
+		return min($this->config->getValue('loglevel', Util::WARN), Util::FATAL);
 	}
 
 	/**
@@ -332,26 +334,35 @@ class Log implements ILogger {
 	 * @since 8.2.0
 	 */
 	public function logException(\Throwable $exception, array $context = []) {
-		$level = Util::ERROR;
-		if (isset($context['level'])) {
-			$level = $context['level'];
-			unset($context['level']);
-		}
+		$app = $context['app'] ?: 'no app in context';
+		$level = $context['level'] ?: Util::ERROR;
+
 		$data = [
+			'CustomMessage' => isset($context['message']) ? $context['message'] : '--',
 			'Exception' => get_class($exception),
 			'Message' => $exception->getMessage(),
 			'Code' => $exception->getCode(),
-			'Trace' => $exception->getTraceAsString(),
+			'Trace' => $exception->getTrace(),
 			'File' => $exception->getFile(),
 			'Line' => $exception->getLine(),
 		];
-		$data['Trace'] = preg_replace('!(' . implode('|', $this->methodsWithSensitiveParameters) . ')\(.*\)!', '$1(*** sensitive parameters replaced ***)', $data['Trace']);
 		if ($exception instanceof HintException) {
 			$data['Hint'] = $exception->getHint();
 		}
-		$msg = isset($context['message']) ? $context['message'] : 'Exception';
-		$msg .= ': ' . json_encode($data);
-		$this->log($level, $msg, $context);
+
+		$minLevel = $this->getLogLevel($context);
+
+		array_walk($context, [$this->normalizer, 'format']);
+
+		if ($level >= $minLevel) {
+			if ($this->logger === File::class) {
+				call_user_func([$this->logger, 'write'], $app, $data, $level);
+			} else {
+				$entry = json_encode($data, JSON_PARTIAL_OUTPUT_ON_ERROR);
+				call_user_func([$this->logger, 'write'], $app, $entry, $level);
+			}
+		}
+
 		$context['level'] = $level;
 		if (!is_null($this->crashReporters)) {
 			$this->crashReporters->delegateReport($exception, $context);
