@@ -107,14 +107,14 @@ class AdminController extends Controller implements ISettings {
 		$notifyGroups = json_decode($this->config->getAppValue('updatenotification', 'notify_groups', '["admin"]'), true);
 
 		$params = [
-			'isNewVersionAvailable' => !empty($updateState['updateAvailable']),
+			'isNewVersionAvailable' => true, //!empty($updateState['updateAvailable']),
 			'lastChecked' => $lastUpdateCheck,
 			'currentChannel' => $currentChannel,
 			'channels' => $channels,
 			'newVersionString' => (empty($updateState['updateVersion'])) ? '' : $updateState['updateVersion'],
 			'downloadLink' => (empty($updateState['downloadLink'])) ? '' : $updateState['downloadLink'],
 			'updaterEnabled' => (empty($updateState['updaterEnabled'])) ? false : $updateState['updaterEnabled'],
-
+			'versionIsEol' => true, //empty($updateState['versionIsEol']) ? false : $updateState['versionIsEol'],
 			'notify_groups' => implode('|', $notifyGroups),
 		];
 
