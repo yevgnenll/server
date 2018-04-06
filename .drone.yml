@@ -667,6 +667,16 @@ pipeline:
     when:
       matrix:
         TESTS: ui-regression
+  publish-scp:
+    image: appleboy/drone-scp
+    host: web01.bitgrid.net
+    source: tests/ui-regression/out/**/*
+    strip_prefix: tests/ui-regression/out/
+    target: /public/${DRONE_REPO_OWNER}/${DRONE_REPO_NAME}/${DRONE_PULL_REQUEST}
+    secrets: [ ssh_username, ssh_password ]
+    when:
+      matrix:
+        TESTS: ui-regression
 matrix:
   include:
     - TESTS: checkers
