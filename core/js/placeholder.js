@@ -97,16 +97,16 @@
 			return palette;
 		}
 
-		var red = new Color(182, 70, 157);
-		var yellow = new Color(221, 203, 85);
-		var blue = new Color(0, 130, 201); // Nextcloud blue
+		var color1 = new Color(236, 0, 87);
+		var color2 = new Color(125, 241, 0);
+		var color3 = new Color(255, 139, 0);
 		// Number of steps to go from a color to another
 		// 3 colors * 6 will result in 18 generated colors
 		var steps = 6;
 
-		var palette1 = mixPalette(steps, red, yellow);
-		var palette2 = mixPalette(steps, yellow, blue);
-		var palette3 = mixPalette(steps, blue, red);
+		var palette1 = mixPalette(steps, color1, color2);
+		var palette2 = mixPalette(steps, color2, color3);
+		var palette3 = mixPalette(steps, color3, color1);
 
 		var finalPalette = palette1.concat(palette2).concat(palette3);
 
