@@ -35,6 +35,9 @@ input {
 }
 
 #avatarform {
+	&.section {
+		border-top: none;
+	}
 	.avatardiv {
 		margin: 10px auto;
 	}
@@ -830,6 +833,7 @@ span.version {
 
 .personal-settings-setting-box .section {
 	padding: 10px 30px;
+	border-top: none;
 }
 
 .followupsection {
